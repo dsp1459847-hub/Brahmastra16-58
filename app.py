@@ -9,7 +9,7 @@ warnings.filterwarnings('ignore')
 st.set_page_config(page_title="MAYA AI - Golden Sequence Engine", layout="wide")
 
 st.title("MAYA AI 🦅: Golden Sequence Master Engine ⚡")
-st.markdown("Aapki saari conditions ek sath: **1. Pahada + Ajeeb Dono Mix (100% Accuracy), 2. GOLDEN PATTERN DETECTOR (e.g. 4 Fail, 1 Pass), 3. Result Freezer (No Hang)!**")
+st.markdown("Aapki saari conditions ek sath: **1. Pahada + Ajeeb Dono Mix, 2. Aapki 5 Strict Conditions, 3. GOLDEN PATTERN DETECTOR, 4. Result Freezer!**")
 
 # --- RESULT MEMORY (DIARY) INITIALIZATION ---
 if 'results_cache' not in st.session_state:
@@ -69,7 +69,7 @@ if uploaded_file is not None:
             h_list = list(history_tuple)
             if len(h_list) < 30: return 15
             tf_scores = {}
-            for tf in range(1, 46): # DONO PAHADA AUR BINA PAHADA EK SATH CHECK HONGE
+            for tf in range(1, 46): 
                 succ = 0
                 for i in range(len(h_list)-15, len(h_list)-1):
                     pat = h_list[:i][-tf:]
@@ -81,11 +81,9 @@ if uploaded_file is not None:
                 tf_scores[tf] = succ
             return max(tf_scores, key=tf_scores.get) if tf_scores else 15
 
-        # --- NAYA: GOLDEN SEQUENCE DETECTOR ---
         def detect_golden_pattern(hit_history):
             if len(hit_history) < 10: return False, 0, 0
             
-            # Pattern ka X-ray nikalna (Run Length Encoding)
             rle = []
             cur_val = hit_history[0]
             count = 1
@@ -100,12 +98,11 @@ if uploaded_file is not None:
             if len(rle) < 4: return False, 0, 0
             
             last_val, last_count = rle[-1]
-            if last_val is not False: return False, 0, 0 # Target: Current din 'Fail' hona chahiye pattern match ke liye
+            if last_val is not False: return False, 0, 0 
             
-            P_len = rle[-2][1] # Kitne din Pass hua tha pichli baar?
-            F_len = rle[-1][1] # Kitne din Fail chal raha hai abhi?
+            P_len = rle[-2][1] 
+            F_len = rle[-1][1] 
             
-            # Agar past mein bhi same YAHI ladi (sequence) do baar bani hai, toh ye Golden Pattern hai!
             if (rle[-3][0] is False and rle[-3][1] == F_len and 
                 rle[-4][0] is True and rle[-4][1] == P_len):
                 return True, P_len, F_len
@@ -120,9 +117,7 @@ if uploaded_file is not None:
             valid_golden_tfs = []
             valid_normal_tfs = []
             
-            for tf in range(1, 46): # SABHI 45 TIMEFRAMES CHECK HONGE (PAHADA + AJEEB)
-                
-                # Pehle is timeframe ki poori history nikalo
+            for tf in range(1, 46): 
                 hit_history = []
                 for i in range(15, len(h_list)):
                     pat = h_list[:i][-tf:]
@@ -136,7 +131,6 @@ if uploaded_file is not None:
                 
                 if not hit_history: continue
                 
-                # 🌟 AAPKA NAYA RULE: Check Golden Pattern
                 is_golden, p_len, f_len = detect_golden_pattern(hit_history)
                 
                 jan_apr = 0
@@ -151,20 +145,19 @@ if uploaded_file is not None:
                         if cur_f > max_fail: max_fail = cur_f
                     else: cur_f = 0
 
-                # Agar Golden Pattern mila toh isko Super VIP list mein dalo
                 if is_golden:
                     valid_golden_tfs.append({
                         'tf': tf, 'p_len': p_len, 'f_len': f_len, 'score': jan_apr, 'max_f': max_fail
                     })
                     
-                # Agar Golden nahi mila toh Normal Sniper Logic check karo (Kal Pass, Parso Fail)
-                elif hit_history[-1] == True and hit_history[-2] == False:
+                # 🌟 AAPKI 5 CONDITIONS YAHAN HAIN (Agar Golden nahi hai toh ye check hoga)
+                elif hit_history[-1] == True and hit_history[-2] == False: # Rule 1: Kal Pass & Rule 2: Parso Fail
                     fail_streak = 0
                     for k in range(len(hit_history)-2, -1, -1):
                         if hit_history[k] == False: fail_streak += 1
                         else: break
                         
-                    # No Double Big Fall
+                    # Rule 3: No Double Big Fall
                     valid_normal = True
                     if fail_streak >= 3:
                         idx_after_pass = len(hit_history) - 1 - fail_streak - 1
@@ -175,21 +168,20 @@ if uploaded_file is not None:
                         if prev_fail_count >= 3: valid_normal = False
                             
                     if valid_normal:
+                        # Rule 4 & 5 (Jan-Apr & Max Fail) bhi yahan save ho rahe hain
                         valid_normal_tfs.append({'tf': tf, 'streak': fail_streak, 'score': jan_apr, 'max_f': max_fail})
 
-            # 🥇 DECISION 1: Agar Golden Pattern Sequence hai, toh wahi Rank 1 hai!
             if valid_golden_tfs:
                 best = sorted(valid_golden_tfs, key=lambda x: (x['max_f'], -x['score']))[0]
                 logic_name = f"GOLDEN SEQUENCE ({best['f_len']} Fail, {best['p_len']} Pass)"
                 return best['tf'], logic_name, best['f_len'], best['score'], best['max_f']
                 
-            # 🥈 DECISION 2: Agar Golden Sequence nahi hai, toh Master Sniper chalao
             if valid_normal_tfs:
+                # Ranking by Minimum Max-Fail then Jan-Apr Score
                 best = sorted(valid_normal_tfs, key=lambda x: (x['max_f'], -x['score']))[0]
-                return best['tf'], "MASTER SNIPER FILTER", best['streak'], best['score'], best['max_f']
+                return best['tf'], "MASTER SNIPER (Aapki 5 Conditions Pass)", best['streak'], best['score'], best['max_f']
                 
-            # Fallback
-            return 15, "Default Safe Mode", 0, 0, 99
+            return 15, "Default Safe Mode (Koi Shart Puri Nahi Hui)", 0, 0, 99
 
         # --- PROCESS ALL SHIFTS ---
         for shift in shift_order:
@@ -197,16 +189,15 @@ if uploaded_file is not None:
             
             st.markdown("---")
             
-            # 🚀 RESULT FREEZER LOGIC (Screenshot Mode)
+            # 🚀 RESULT FREEZER LOGIC
             if shift not in st.session_state.results_cache:
-                with st.spinner(f"Searching {shift}... Dono Pahade aur Ajeeb check ho rahe hain!"):
+                with st.spinner(f"Searching {shift}... Sabhi conditions check ho rahi hain!"):
                     s_data = filtered_df[['DATE', shift]].dropna()
                     hist = s_data[shift].astype(int).tolist()
                     d_list = s_data['DATE'].tolist()
                     
                     if len(hist) < 60: continue
                     
-                    # 1. Check Current Streak
                     streak = 0
                     for j in range(len(hist)-1, max(20, len(hist)-20), -1):
                         tf = get_best_main_timeframe_fast(tuple(hist[:j]))
@@ -215,7 +206,6 @@ if uploaded_file is not None:
                             break
                         streak += 1
 
-                    # 2. Apply Logic based on Streak
                     if streak == 0:
                         tf_final = get_best_main_timeframe_fast(tuple(hist))
                         res_vals = (tf_final, "MAIN ENGINE (Continuous Pass)", 0, 0, 0)
@@ -227,12 +217,10 @@ if uploaded_file is not None:
                     
                     tf_final = res_vals[0]
                     
-                    # 3. Final Predictions
                     tiers = get_all_tiers_cached(tuple(hist))
                     nxt = [hist[i+tf_final] for i in range(len(hist)-tf_final) if hist[i:i+tf_final] == hist[-tf_final:]]
                     tier_best = get_tier_name(Counter(nxt).most_common(1)[0][0], tiers) if nxt else 'H'
                     
-                    # Trap Checking
                     last_n = hist[-1]
                     prev_n = hist[-2]
                     traps = set([(last_n+1)%100, (last_n-1)%100, int(str(last_n).zfill(2)[::-1]), (last_n + (last_n - prev_n))%100])
@@ -241,7 +229,6 @@ if uploaded_file is not None:
                         
                     green_nums = [n for n in tiers[tier_best] if n not in traps]
                     
-                    # 4. SAVE TO SCREENSHOT DIARY
                     st.session_state.results_cache[shift] = {
                         'logic': res_vals[1], 'tf': tf_final, 'streak_before': res_vals[2], 
                         'score': res_vals[3], 'max_f': res_vals[4], 'tier': tier_best,
@@ -249,35 +236,26 @@ if uploaded_file is not None:
                         'raw_tier_nums': tiers[tier_best]
                     }
 
-            # --- DISPLAY FROM "SCREENSHOT" (No Calculation) ---
+            # --- DISPLAY FROM "SCREENSHOT" ---
             res = st.session_state.results_cache[shift]
             
+            # --- DATE EXTRACTION FOR BANNERS (Aapki Requirement) ---
             dates_today = filtered_df[filtered_df[shift].notna()]['DATE'].tolist()
-            date_kal_pass = dates_today[-1].strftime('%d %b %Y')
+            date_kal = dates_today[-1].strftime('%d %B %Y') if len(dates_today) > 0 else ""
+            date_parso = dates_today[-2].strftime('%d %B %Y') if len(dates_today) > 1 else ""
             
-            # CUSTOM DISPLAY FOR GOLDEN PATTERN
-            if res['logic'].startswith("GOLDEN SEQUENCE"):
-                p_len = res['logic'].split(',')[1].split()[0]
-                d_text = f"🔥 <b>GOLDEN PATTERN DETECTED!</b> Pichle kuch cycles se ye TF exactly <b>{res['streak_before']} Fail, {p_len} Pass</b> ke mathematical loop mein phasa hai. Aaj iska Fail quota poora ho gaya, <b>Kal Pass ki guarantee hai!</b>"
-            elif res['streak_before'] > 0:
-                date_fail_start = dates_today[-1 - res['streak_before']].strftime('%d %b %Y')
-                date_fail_end = dates_today[-2].strftime('%d %b %Y')
-                if res['streak_before'] == 1:
-                    d_text = f"Yeh Timeframe <b>{date_fail_end}</b> ko (1 din) fail hone ke baad, kal <b>{date_kal_pass}</b> ko PAAS hua tha!"
-                else:
-                    d_text = f"Yeh Timeframe <b>{date_fail_start}</b> se <b>{date_fail_end}</b> tak ({res['streak_before']} din) fail hone ke baad, kal <b>{date_kal_pass}</b> ko PAAS hua tha!"
-            else:
-                d_text = "Safe/Default Timeframe applied."
-
-            # UI Banners
             st.subheader(f"🧩 Shift: {shift}")
             
+            # TOP BANNERS WITH EXACT DATES
             if res['cur_fail_streak'] == 0:
-                st.markdown(f"<div style='background:#28a745; padding:10px; border-radius:8px; border: 2px solid #1e7e34; text-align:center; color:white; margin-bottom:10px;'>✅ <b>PICHLA DIN PAAS THA (Streak: 0 Fail)</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#28a745; padding:10px; border-radius:8px; border: 2px solid #1e7e34; text-align:center; color:white; margin-bottom:10px;'>"
+                            f"✅ <b>PICHLA DIN ({date_kal}) PAAS THA! (Streak: 0 Fail)</b><br>Aaj naya Target Date lagaya jayega.</div>", unsafe_allow_html=True)
             elif res['cur_fail_streak'] == 1:
-                st.markdown(f"<div style='background:#ffc107; padding:10px; border-radius:8px; border: 2px solid #d39e00; text-align:center; color:black; margin-bottom:10px;'>⚠️ <b>1 DIN FAIL HUA HAI!</b> Kal wala same timeframe use hoga.</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#ffc107; padding:10px; border-radius:8px; border: 2px solid #d39e00; text-align:center; color:black; margin-bottom:10px;'>"
+                            f"⚠️ <b>PICHLA DIN ({date_kal}) FAIL HUA THA!</b><br>Lekin usse pehle <b>{date_parso}</b> ko paas tha. Isliye kal wala same timeframe aaj bhi khela jayega!</div>", unsafe_allow_html=True)
             else:
-                st.markdown(f"<div style='background:#FF4B4B; padding:10px; border-radius:8px; border: 2px solid #c82333; text-align:center; color:white; margin-bottom:10px;'>🔥 <b>GEAR SHIFTED ({res['cur_fail_streak']} Din Se Fail)</b> {res['logic']} lagaya gaya!</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#FF4B4B; padding:10px; border-radius:8px; border: 2px solid #c82333; text-align:center; color:white; margin-bottom:10px;'>"
+                            f"🔥 <b>GEAR SHIFTED ({res['cur_fail_streak']} Din Se Fail)</b><br>Naya Filter lagakar Timeframe badla gaya hai!</div>", unsafe_allow_html=True)
 
             c1, c2 = st.columns([1, 2.5])
             with c1:
@@ -287,12 +265,11 @@ if uploaded_file is not None:
                 
                 if actual_val is not None:
                     m_color = "#28a745" if is_hit else "#FF4B4B"
-                    st.markdown(f"<div style='background:{m_color}; padding:10px; border-radius:8px; text-align:center; color:white;'>Match Result:<br><b style='font-size:26px;'>{actual_val:02d}</b><br>{'HIT! ✅' if is_hit else 'MISS ❌'}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:{m_color}; padding:10px; border-radius:8px; text-align:center; color:white;'>Match Result ({target_date_next.strftime('%d %b')}):<br><b style='font-size:26px;'>{actual_val:02d}</b><br>{'HIT! ✅' if is_hit else 'MISS ❌'}</div>", unsafe_allow_html=True)
                 else:
                     st.markdown(f"<div style='background:#555; padding:10px; border-radius:8px; text-align:center; color:white;'>Result:<br><b>Waiting...</b></div>", unsafe_allow_html=True)
             
             with c2:
-                # Golden Sequence Highlight
                 border_col = "#FFD700" if res['logic'].startswith("GOLDEN") else "#00FF7F"
                 bg_col = "#FFD70015" if res['logic'].startswith("GOLDEN") else "#00FF7F15"
                 
@@ -300,11 +277,15 @@ if uploaded_file is not None:
                             f"<b>Logic:</b> {res['logic']} | <b>Selected Gear:</b> <code>{res['tf']}-Din TF</code><br>")
                 
                 if res['cur_fail_streak'] >= 2:
-                    st.markdown(f"<i>📌 {d_text}<br>❄️ Jan-Apr Score: <b>{res['score']} baar</b> direct paas.<br>🔥 <b>SABSE BADI BAAT:</b> Is timeframe ki poori history mein <b>sabse lamba fail sirf {res['max_f']} din</b> gaya hai!</i>", unsafe_allow_html=True)
+                    if res['logic'].startswith("GOLDEN SEQUENCE"):
+                        st.markdown(f"<i>📌 <b>Golden Pattern Dhyan Dein:</b> Yeh pattern loop mein phasa hai. Aaj iska Fail quota poora ho gaya hai!</i>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<i>📌 <b>5 Rules Checked:</b> Kal paas, parso fail, aur no double-big fall check ho chuka hai.<br>"
+                                    f"❄️ Jan-Apr Score: <b>{res['score']} baar</b> direct paas.<br>"
+                                    f"🔥 <b>MIN MAX-FAIL:</b> Poori history mein sabse lamba fail sirf <b>{res['max_f']} din</b> gaya hai!</i>", unsafe_allow_html=True)
                 
                 st.markdown(f"<hr style='margin:5px 0; border-top:1px solid #444;'>🥇 Prediction Tier: <b style='color:{border_col}; font-size:18px;'>{res['tier']}</b></div>", unsafe_allow_html=True)
 
-            # Display Numbers
             nums_html = "<div style='display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;'>"
             for n in sorted(res['raw_tier_nums']):
                 if n in res['traps']:
@@ -317,4 +298,4 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Error: {e}")
-              
+                        
